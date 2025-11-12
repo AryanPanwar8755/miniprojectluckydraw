@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Draw Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #participants, #prizes {
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+        }
+        input {
+            width: 80%;
+            max-width: 400px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #winner {
+            font-size: 24px;
+            margin-top: 20px;
+            font-weight: bold;
+            transition: transform 1s ease-in-out;
+        }
+        .spinning {
+            animation: spin 2s infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #winner-history {
+            margin-top: 30px;
+            font-size: 18px;
+        }
+        .confetti {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .confetti .piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #ff0;
+            animation: confetti 2s linear infinite;
+        }
+        @keyframes confetti {
+            0% { transform: translateY(-100px) rotate(0deg); }
+            100% { transform: translateY(500px) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Lucky Draw Game</h1>
+
+    <div id="participants">
+        <label for="names">Enter Participants (separate names by commas):</label><br>
+        <input type="text" id="names" placeholder="e.g. John, Mary, Alex, Sarah">
+    </div>
+
+    <div id="prizes">
+        <label for="prizes-list">Enter Prizes (separate prizes by commas):</label><br>
+        <input type="text" id="prizes-list" placeholder="e.g. Laptop, TV, Gift Card, Phone">
+    </div>
+
+    <button id="draw-btn" onclick="drawWinner()">Draw Winner</button>
+    <button id="reset-btn" onclick="resetGame()">Reset</button>
+    <button id="clear-history-btn" onclick="clearHistory()">Clear History</button>
+
+    <div id="winner"></div>
+    
+    <div id="winner-history">
+        <h3>Winner History:</h3>
+        <ul id="history-list"></ul>
+    </div>
+
+    <div class="confetti" id="confetti-container"></div>
+
+    <script>
+        let winnerHistory = [];
+        let prizeHistory = [];
+
+        function drawWinner() {
+            const input = document.getElementById('names').value;
+            const participants = input.split(',').map(name => name.trim()).filter(name => name !== "");
+
+            if (participants.length === 0) {
+                alert('Please enter at least one participant.');
+                return;
+            }
+
+            // Remove duplicates
+            const uniqueParticipants = [...new Set(participants)];
+
+            if (uniqueParticipants.length === 0) {
+                alert('Please enter valid participant names.');
+                return;
+            }
+
+            // Check for max number of participants (limit: 50)
+            if (uniqueParticipants.length > 50) {
+                alert('Sorry, you cannot have more than 50 participants.');
+                return;
+            }
+
+            // Get prizes
+            const prizeInput = document.getElementById('prizes-list').value;
+            const prizes = prizeInput.split(',').map(prize => prize.trim()).filter(prize => prize !== "");
+
+            if (prizes.length === 0) {
+                alert('Please enter at least one prize.');
+                return;
+            }
+
+            // Ensure each prize is unique
+            const uniquePrizes = [...new Set(prizes)];
+
+            if (uniquePrizes.length === 0) {
+                alert('Please enter valid prizes.');
+                return;
+            }
+
+            // Disable the draw button during the process
+            const drawBtn = document.getElementById('draw-btn');
+            drawBtn.disabled = true;
+            drawBtn.textContent = "Selecting...";
+
+            // Apply spinning animation to winner text
+            const winnerElement = document.getElementById('winner');
+            winnerElement.classList.add('spinning');
+            winnerElement.textContent = "Selecting a winner...";
+
+            // Simulate a delay for drawing the winner
+            setTimeout(() => {
+                const randomIndex = Math.floor(Math.random() * uniqueParticipants.length);
+                const winner = uniqueParticipants[randomIndex];
+
+                // Random prize assignment
+                const randomPrizeIndex = Math.floor(Math.random() * uniquePrizes.length);
+                const prize = uniquePrizes[randomPrizeIndex];
+
+                // Display the winner with their prize
+                winnerElement.classList.remove('spinning');
+                winnerElement.textContent = `${winner} wins a ${prize}!`;
+
+                // Add winner and prize to history
+                winnerHistory.push(winner);
+                prizeHistory.push(prize);
+                updateWinnerHistory();
+
+                // Play sound effect
+                const audio = new Audio('https://www.soundjay.com/button/beep-07.wav'); // You can change the sound URL to any valid .wav or .mp3
+                audio.play();
+
+                // Trigger confetti animation
+                triggerConfetti();
+
+                // Re-enable the draw button
+                drawBtn.disabled = false;
+                drawBtn.textContent = "Draw Winner";
+            }, 3000); // 3-second delay for animation effect
+        }
+
+        function resetGame() {
+            document.getElementById('names').value = '';
+            document.getElementById('prizes-list').value = '';
+            document.getElementById('winner').textContent = '';
+            winnerHistory = [];
+            prizeHistory = [];
+            updateWinnerHistory();
+        }
+
+        function clearHistory() {
+            winnerHistory = [];
+            prizeHistory = [];
+            updateWinnerHistory();
+        }
+
+        function updateWinnerHistory() {
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = ''; // Clear the previous history
+
+            for (let i = 0; i < winnerHistory.length; i++) {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${winnerHistory[i]} won ${prizeHistory[i]}`;
+                historyList.appendChild(listItem);
+            }
+        }
+
+        function triggerConfetti() {
+            const confettiContainer = document.getElementById('confetti-container');
+            confettiContainer.innerHTML = ''; // Clear previous confetti
+            for (let i = 0; i < 100; i++) {
+                const confettiPiece = document.createElement('div');
+                confettiPiece.classList.add('piece');
+                confettiPiece.style.left = `${Math.random() * 100}%`;
+                confettiPiece.style.animationDuration = `${Math.random() * 2 + 3}s`; // Randomize animation speed
+                confettiContainer.appendChild(confettiPiece);
+            }
+        }
+    </script>
+
+</body>
+</html>
